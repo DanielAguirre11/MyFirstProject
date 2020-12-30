@@ -1,0 +1,32 @@
+-
+  name: Test file cpdof
+  hosts: localhost
+  vars:
+    become_pass: "test123"
+    become_user: "devops"
+    become_method: sudo
+  tasks:
+  -
+    name: Define variable in task.
+    shell: read -r BUILD_LATEST < filename.txt &&  echo $BUILD_LATEST
+    register: BUILD_LATEST
+  -
+    debug:
+      var: BUILD_LATEST.stdout_lines[0]
+  -
+    file:
+      path: /opt/apache-tomcat-9.0.20/webapps/CounterWebApp.war
+      state: absent
+      name: "remove existing extracted war"
+  -
+    name: "Copy the war file from url to local tomcat"
+    get_url:
+      dest: /opt/apache-tomcat-9.0.20/webapps/CounterWebApp.war
+      force: true
+      url: "{{ BUILD_LATEST.stdout_lines[0]}}"
+  -
+    name: Copy the build to the docker staging server (container id) 3d801c678e64
+    become: true
+    become_method: su
+    become_user: devops
+    shell: sudo docker cp  /opt/apache-tomcat-9.0.20/webapps/CounterWebApp.war cranky_hermann:/usr/local/tomcat/webapps
